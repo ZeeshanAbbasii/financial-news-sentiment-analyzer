@@ -1,40 +1,39 @@
 # app.py
 
-import streamlit as st
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import gradio as gr
 import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-# Load model from Hugging Face
+# Load FinBERT model from Hugging Face
 MODEL_NAME = "zeeshanabbasi2004/finbert-sentiment"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
 
-# Set device
-device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-# Sentiment prediction
+# Define prediction function
 def predict_sentiment(text):
     model.eval()
     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=50).to(device)
     with torch.no_grad():
         logits = model(**inputs).logits
         probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
+    
+    labels = ['Negative', 'Neutral', 'Positive']
+    prediction = labels[probs.argmax()]
+    confidence = round(probs.max() * 100, 2)
+    
+    return f"{prediction} ({confidence}%)"
 
-    labels = ['negative', 'neutral', 'positive']
-    return labels[probs.argmax()], round(probs.max() * 100, 2)
+# Gradio interface
+demo = gr.Interface(
+    fn=predict_sentiment,
+    inputs=gr.Textbox(lines=2, placeholder="Enter financial headline here..."),
+    outputs="text",
+    title="Financial News Sentiment Analyzer",
+    description="Classify financial headlines as Positive, Neutral, or Negative using FinBERT"
+)
 
-# Streamlit UI
-st.set_page_config(page_title="Financial Sentiment Analyzer", layout="centered")
-
-st.title("💰 Financial News Sentiment Analyzer")
-st.markdown("Enter a financial headline to classify its sentiment:")
-
-headline = st.text_input("🔍 Enter Headline:", "")
-
-if st.button("Analyze"):
-    if headline.strip() == "":
-        st.warning("Please enter a headline.")
-    else:
-        sentiment, confidence = predict_sentiment(headline)
-        st.success(f"**Sentiment:** {sentiment.upper()} ({confidence}%)")
+if __name__ == "__main__":
+    demo.launch()
