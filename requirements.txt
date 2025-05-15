@@ -1,0 +1,28 @@
+# Core libraries
+pandas
+numpy
+matplotlib
+seaborn
+wordcloud
+tqdm
+
+# NLP preprocessing
+nltk
+
+# Machine learning
+scikit-learn
+xgboost
+
+# Transformers and PyTorch
+transformers>=4.30.0
+torch>=1.10.0
+
+# Hugging Face Hub for upload/download
+huggingface_hub
+
+# Jupyter support (for notebook users)
+ipykernel
+
+streamlit
+torch
+transformers
